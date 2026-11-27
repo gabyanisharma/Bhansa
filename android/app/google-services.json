@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "652518101131",
+    "project_id": "bhansa-85ab2",
+    "storage_bucket": "bhansa-85ab2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:652518101131:android:8e54db31ea0975a357c48e",
+        "android_client_info": {
+          "package_name": "com.example.bhansa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAu9ra6-cPqofPiBB6ZAyS6shMgbIfNV3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

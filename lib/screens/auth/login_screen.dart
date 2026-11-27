@@ -4,6 +4,7 @@ import '../../core/app_colors.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 import 'package:flutter/cupertino.dart';
+import '../../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +18,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  final _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -43,10 +46,24 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  void _onSignIn() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: connect to AuthService (backend step)
-      debugPrint('Sign in: ${_emailController.text.trim()}');
+  Future<void> _onSignIn() async {
+    if (_isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _authService.login(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      // Nothing else to do: AuthGate detects the login and shows Home.
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -291,7 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   child: ElevatedButton(
-                    onPressed: _onSignIn,
+                    onPressed: _isLoading ? null : _onSignIn,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.orange,
                       foregroundColor: Colors.white,
@@ -300,7 +317,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                        : Text(
                       'Sign in',
                       style: GoogleFonts.inter(
                         fontSize: 15,

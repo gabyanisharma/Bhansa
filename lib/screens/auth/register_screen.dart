@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../../core/app_colors.dart';
+import '../../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -20,6 +22,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirm = true;
   bool _agreed = false;
   bool _showAgreeError = false;
+  final _authService = AuthService();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -76,13 +80,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return null;
   }
 
-  // ---------- Actions ----------
-  void _onCreateAccount() {
+  Future<void> _onCreateAccount() async {
+    if (_isLoading) return;
+
     final valid = _formKey.currentState!.validate();
     setState(() => _showAgreeError = !_agreed);
-    if (valid && _agreed) {
-      // TODO: connect to AuthService (backend step)
-      debugPrint('Register: ${_emailController.text.trim()}');
+    if (!valid || !_agreed) return;
+
+    setState(() => _isLoading = true);
+    try {
+      await _authService.register(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      // Close this screen so AuthGate's Home page is visible.
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -365,9 +385,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: AppColors.textGrey,
                         size: 20,
                       ),
-                      onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword,
-                      ),
+                      onPressed: () =>
+                          setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                 ),
@@ -392,9 +411,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: AppColors.textGrey,
                         size: 20,
                       ),
-                      onPressed: () => setState(
-                            () => _obscureConfirm = !_obscureConfirm,
-                      ),
+                      onPressed: () =>
+                          setState(() => _obscureConfirm = !_obscureConfirm),
                     ),
                   ),
                 ),
@@ -418,7 +436,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ],
                   ),
                   child: ElevatedButton(
-                    onPressed: _onCreateAccount,
+                    onPressed: _isLoading ? null : _onCreateAccount,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.orange,
                       foregroundColor: Colors.white,
@@ -427,13 +445,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      'Create account',
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Create account',
+                            style: GoogleFonts.inter(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 20),
